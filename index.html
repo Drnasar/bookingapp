@@ -1,24 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<link rel="stylesheet" href="Google Sheet.css">
-	<link rel="stylesheet" href="https://cdnjs.cloud">
-    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Calendar</title>
+    
+    <!-- Include Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Include Flatpickr for Date Picker -->
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <!-- Include SweetAlert for Confirmation Messages -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            background: linear-gradient(to right, #ece9e6, #ffffff);
+        }
+    </style>
 </head>
-<body>
-	<div class="container">
-		<form method="post" action="https://script.google.com/macros/s/AKfycbzJpwLmn3PssT9NGiMfryyczXDpMlKK6XHyMOr79o7SJEo7W-fy5ONGfbP28nxGFDxzBA/exec" name="contact-form">
-			<h4>Contact Us</h4>
-			<input type="text" name="your-name" placeholder="Name">
-			<input type="text" name="your-number" placeholder="Numbear">
-			<input type="place" name="your-place" placeholder="Place">
-			<input type="date" name="your-date" placeholder="Date">
-			<input type="time" name="your-time" placeholder="Time">
-			<input type="submit" value="Submit" id="submit">
-			 <a href="tel: +919746704040"><i class="fa fa-phone"></i> <i></i>Call Now</i> </a>
-		</form>
-	</div>
+<body class="bg-gray-100 p-4 sm:p-6">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-lg p-6">
+        <h2 class="text-2xl font-semibold mb-6 text-gray-800">Schedule Your Appointment</h2>
 
-	<script src="Google Sheet.js"></script>
+        <!-- Form Fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label for="name" class="block text-gray-700 font-semibold mb-2">Name</label>
+                <input type="text" id="name" class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your Name" required>
+            </div>
+            <div>
+                <label for="phone" class="block text-gray-700 font-semibold mb-2">Phone Number</label>
+                <input type="tel" id="phone" class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your Phone Number" required>
+            </div>
+            
+        </div>
+
+        <!-- Date and Time Selection -->
+        <div class="flex flex-col md:flex-row md:space-x-6">
+            <div class="w-full md:w-1/2 mb-6 md:mb-0">
+                <label class="block text-gray-700 mb-4 text-lg font-semibold">Select Date</label>
+                <div id="datePicker" class="bg-white p-4 border border-gray-300 rounded-lg shadow-sm"></div>
+            </div>
+            <div class="w-full md:w-1/2">
+                <label class="block text-gray-700 mb-4 text-lg font-semibold">Available Time Slots</label>
+                <div id="timeSlots" class="grid grid-cols-3 gap-2 sm:gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Selected Date and Time Display -->
+        <div id="selectedInfo" class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-300 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Selected Appointment</h3>
+            <p id="selectedDate" class="text-gray-600">Date: <span class="text-indigo-500">Not selected</span></p>
+            <p id="selectedTime" class="text-gray-600">Time: <span class="text-indigo-500">Not selected</span></p>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mt-6 flex items-center justify-center md:justify-between">
+            <button class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow-sm text-center" onclick="submitForm()">Submit</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Date Picker with dynamic default date
+        const today = new Date();
+        const datePicker = flatpickr("#datePicker", {
+            inline: true,
+            defaultDate: today,
+            dateFormat: "m/d/Y",
+            minDate: "today",
+            onChange: function(selectedDates, dateStr) {
+                document.getElementById('selectedDate').innerHTML = `Date: <span class="text-indigo-500">${dateStr}</span>`;
+            }
+        });
+
+        // Generate time slots from 9:00 AM to 4:30 PM in 30-minute intervals
+        const timeSlots = [];
+        for (let hour = 9; hour <= 15; hour++) {
+            timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+            if (hour !== 16) {
+                timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+            }
+        }
+
+        // Display time slots in the UI
+        const timeSlotsContainer = document.getElementById('timeSlots');
+        timeSlots.forEach(slot => {
+            const button = document.createElement('button');
+            button.className = 'bg-gray-200 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-lg shadow-sm text-sm sm:text-base';
+            button.textContent = slot;
+            button.setAttribute('data-time', slot);
+            button.addEventListener('click', function () {
+                document.getElementById('selectedTime').innerHTML = `Time: <span class="text-indigo-500">${slot}</span>`;
+                document.querySelectorAll('#timeSlots button').forEach(btn => btn.classList.remove('bg-indigo-500', 'text-white'));
+                button.classList.add('bg-indigo-500', 'text-white');
+            });
+            timeSlotsContainer.appendChild(button);
+        });
+
+        // Function to handle form submission
+        function submitForm() {
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+          //  const email = document.getElementById('email').value.trim();
+           // const notes = document.getElementById('notes').value.trim();
+            const date = document.getElementById('selectedDate').innerText.split(": ")[1];
+            const time = document.getElementById('selectedTime').innerText.split(": ")[1];
+
+            // Ensure all required fields are filled
+            if (name && phone && date !== "Not selected" && time !== "Not selected") {
+                // Call Google Apps Script to process the form data
+                google.script.run.withSuccessHandler(function(response) {
+                    // Show success alert using SweetAlert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Appointment Scheduled',
+                        text: response,
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        // Reset the form
+                        document.getElementById('name').value = '';
+                        document.getElementById('phone').value = '';
+                       // document.getElementById('email').value = '';
+                      //  document.getElementById('notes').value = '';
+                        datePicker.clear();
+                        document.getElementById('selectedDate').innerHTML = `Date: <span class="text-indigo-500">Not selected</span>`;
+                        document.getElementById('selectedTime').innerHTML = `Time: <span class="text-indigo-500">Not selected</span>`;
+                        document.querySelectorAll('#timeSlots button').forEach(btn => btn.classList.remove('bg-indigo-500', 'text-white'));
+                    });
+                }).submitForm({ name, phone,  date, time });
+            } else {
+                // Show error alert using SweetAlert
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Incomplete Information',
+                    text: 'Please fill in all required fields and select a date and time!',
+                });
+            }
+        }
+    </script>
 </body>
 </html>
