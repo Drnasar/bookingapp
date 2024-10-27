@@ -1,1 +1,18 @@
+body{
 
+   background-color: aqua;
+}
+@media (max-width: 768px) 
+{ .booking{
+     padding: 20px;
+}
+
+      
+    }
+
+    @media (max-width:768px){
+        .call{
+           padding: 20px;
+        }
+    }
+   
